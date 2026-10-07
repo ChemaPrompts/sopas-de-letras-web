@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba de descarga de PDF</title>
+<style>
+  body {
+    margin: 0;
+    padding: 24px 16px;
+    font-family: system-ui, sans-serif;
+    background: #f6f6f4;
+    color: #222;
+    text-align: center;
+  }
+  h1 { font-size: 1.4rem; margin: 0 0 12px; }
+  p { margin: 0 0 24px; line-height: 1.4; }
+  button {
+    width: 100%;
+    max-width: 360px;
+    padding: 18px;
+    font-size: 1.15rem;
+    border: none;
+    border-radius: 12px;
+    background: #2b6cb0;
+    color: #fff;
+  }
+  button:active { background: #1f4f82; }
+  #estado { margin-top: 20px; min-height: 1.4em; }
+</style>
+</head>
+<body>
+  <h1>Prueba de descarga de PDF</h1>
+  <p>Pulsa el botón. Chrome debería descargar un archivo<br>llamado <b>prueba.pdf</b>.</p>
+  <button id="boton">Descargar PDF de prueba</button>
+  <div id="estado"></div>
+
+<script src="lib/jspdf.umd.min.js"></script>
+<script>
+  const CM = 72 / 2.54;              // puntos por centímetro
+  const ANCHO = 6 * 72, ALTO = 9 * 72; // página 6x9 pulgadas (KDP)
+
+  // Vacía el campo "Producer" (jsPDF pone su nombre) sin cambiar la longitud
+  // del archivo, y lo descarga con el flujo normal del navegador.
+  function descargar(doc, nombre) {
+    const texto = doc.output().replace(/\/Producer \(([^)]*)\)/, (m, v) =>
+      "/Producer ()" + " ".repeat(v.length));
+    const bytes = new Uint8Array(texto.length);
+    for (let i = 0; i < texto.length; i++) bytes[i] = texto.charCodeAt(i) & 0xff;
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nombre;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  document.getElementById("boton").addEventListener("click", () => {
+    const estado = document.getElementById("estado");
+    try {
+      const doc = new jspdf.jsPDF({ unit: "pt", format: [ANCHO, ALTO] });
+      doc.setProperties({ title: "", subject: "", author: "", keywords: "", creator: "" });
+
+      // Recuadro a 1,5 cm del borde, para comprobar medidas al imprimir.
+      doc.setLineWidth(1);
+      doc.rect(1.5 * CM, 1.5 * CM, ANCHO - 3 * CM, ALTO - 3 * CM);
+      doc.setFontSize(20);
+      doc.text("Prueba de descarga", ANCHO / 2, ALTO / 2, { align: "center" });
+
+      descargar(doc, "prueba.pdf");
+      estado.textContent = "PDF generado. Mira las descargas de Chrome.";
+    } catch (e) {
+      estado.textContent = "Error: " + e.message;
+    }
+  });
+</script>
+</body>
+</html>
