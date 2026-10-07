@@ -3,78 +3,150 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prueba de descarga de PDF</title>
+<meta name="theme-color" content="#2b6cb0">
+<title>Sopas de letras</title>
 <style>
+  @font-face { font-family: "LetraSopa"; font-weight: 400; src: url("fuentes/LiberationSans-Regular.ttf"); }
+  @font-face { font-family: "LetraSopa"; font-weight: 700; src: url("fuentes/LiberationSans-Bold.ttf"); }
+
+  :root {
+    --fondo: #f2f1ee;
+    --tarjeta: #fff;
+    --texto: #222;
+    --suave: #666;
+    --borde: #d4d2cc;
+    --azul: #2b6cb0;
+    --azul-oscuro: #1f4f82;
+    --rojo: #b42318;
+    --verde: #1e7a3c;
+    --aviso: #fff4d6;
+  }
+  * { box-sizing: border-box; }
   body {
     margin: 0;
-    padding: 24px 16px;
-    font-family: system-ui, sans-serif;
-    background: #f6f6f4;
-    color: #222;
-    text-align: center;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--fondo);
+    color: var(--texto);
+    font-size: 17px;
+    line-height: 1.4;
   }
-  h1 { font-size: 1.4rem; margin: 0 0 12px; }
-  p { margin: 0 0 24px; line-height: 1.4; }
-  button {
+  header { background: var(--azul); color: #fff; padding: 14px 16px; }
+  header h1 { margin: 0; font-size: 1.3rem; }
+  main { max-width: 640px; margin: 0 auto; padding: 12px 16px 40px; }
+  .tarjeta {
+    background: var(--tarjeta);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  h2 { font-size: 1.15rem; margin: 0 0 12px; }
+  label { display: block; margin-bottom: 12px; font-weight: 600; }
+  small, .nota { display: block; font-weight: 400; color: var(--suave); font-size: .9rem; }
+  input[type=text], textarea, select {
     width: 100%;
-    max-width: 360px;
-    padding: 18px;
-    font-size: 1.15rem;
-    border: none;
-    border-radius: 12px;
-    background: #2b6cb0;
-    color: #fff;
+    margin-top: 6px;
+    padding: 12px;
+    font: inherit;
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--texto);
   }
-  button:active { background: #1f4f82; }
-  #estado { margin-top: 20px; min-height: 1.4em; }
+  textarea { resize: vertical; min-height: 9em; }
+  .casilla { display: flex; align-items: center; gap: 10px; font-weight: 400; }
+  .casilla input { width: 22px; height: 22px; }
+  button {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin-top: 10px;
+    font: inherit;
+    font-weight: 600;
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--texto);
+  }
+  button.principal { background: var(--azul); border-color: var(--azul); color: #fff; }
+  button.principal:active { background: var(--azul-oscuro); }
+  button.peligro { color: var(--rojo); }
+  button:disabled { opacity: .5; }
+  #contador { font-size: .95rem; margin: -4px 0 12px; }
+  .bien { color: var(--verde); }
+  .mal { color: var(--rojo); }
+  .avisos:empty { display: none; }
+  .avisos { background: var(--aviso); border-radius: 10px; padding: 10px 12px; margin-top: 12px; font-size: .95rem; }
+  .avisos p { margin: 0 0 6px; }
+  .avisos p:last-child { margin: 0; }
+  .pestanas { display: flex; gap: 8px; margin-bottom: 12px; }
+  .pestanas button { margin: 0; padding: 10px; }
+  .pestanas button.activa { background: var(--texto); border-color: var(--texto); color: #fff; }
+  #lienzo svg { display: block; width: 100%; height: auto; border: 1px solid var(--borde); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  #listaLibro { list-style: none; padding: 0; margin: 0; }
+  #listaLibro li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--borde); }
+  #listaLibro li span { flex: 1; overflow-wrap: anywhere; }
+  #listaLibro li button { width: auto; margin: 0; padding: 8px 12px; color: var(--rojo); font-weight: 400; }
+  #mensaje:empty { display: none; }
+  #mensaje { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #e6f4ea; }
+  #mensaje.error { background: #fde8e6; }
 </style>
 </head>
 <body>
-  <h1>Prueba de descarga de PDF</h1>
-  <p>Pulsa el botón. Chrome debería descargar un archivo<br>llamado <b>prueba.pdf</b>.</p>
-  <button id="boton">Descargar PDF de prueba</button>
-  <div id="estado"></div>
+<header><h1>Sopas de letras</h1></header>
+<main>
+  <section class="tarjeta">
+    <h2>Nueva sopa</h2>
+    <label>Título
+      <input type="text" id="titulo" autocomplete="off">
+    </label>
+    <label>Palabras (exactamente 12)
+      <small>Separadas por comas o una por línea.</small>
+      <textarea id="palabras" autocomplete="off" autocapitalize="characters" spellcheck="false"></textarea>
+    </label>
+    <div id="contador"></div>
+    <label class="casilla"><input type="checkbox" id="invertidas"> Permitir palabras al revés</label>
+    <button id="btnGenerar" class="principal" disabled>Generar sopa</button>
+    <div id="mensaje"></div>
+  </section>
 
-<script src="lib/jspdf.umd.min.js"></script>
-<script>
-  const CM = 72 / 2.54;              // puntos por centímetro
-  const ANCHO = 6 * 72, ALTO = 9 * 72; // página 6x9 pulgadas (KDP)
+  <section class="tarjeta" id="vista" hidden>
+    <h2 id="tituloVista">Vista previa</h2>
+    <div class="pestanas">
+      <button data-vista="sopa" class="activa">Sopa</button>
+      <button data-vista="solucion">Solución</button>
+    </div>
+    <div id="lienzo"></div>
+    <button id="btnOtra">Otra colocación</button>
+    <button id="btnAnadir" class="principal">Añadir al libro</button>
+    <button id="btnPdfSopa">Descargar solo esta sopa (PDF)</button>
+  </section>
 
-  // Vacía el campo "Producer" (jsPDF pone su nombre) sin cambiar la longitud
-  // del archivo, y lo descarga con el flujo normal del navegador.
-  function descargar(doc, nombre) {
-    const texto = doc.output().replace(/\/Producer \(([^)]*)\)/, (m, v) =>
-      "/Producer ()" + " ".repeat(v.length));
-    const bytes = new Uint8Array(texto.length);
-    for (let i = 0; i < texto.length; i++) bytes[i] = texto.charCodeAt(i) & 0xff;
-    const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = nombre;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }
+  <section class="tarjeta">
+    <h2>Mi libro</h2>
+    <p id="resumenLibro" class="nota"></p>
+    <ul id="listaLibro"></ul>
+    <button id="btnPdfLibro" class="principal">Descargar libro completo (PDF)</button>
+    <button id="btnVaciar" class="peligro">Vaciar libro</button>
+    <div id="avisosLibro" class="avisos"></div>
+  </section>
 
-  document.getElementById("boton").addEventListener("click", () => {
-    const estado = document.getElementById("estado");
-    try {
-      const doc = new jspdf.jsPDF({ unit: "pt", format: [ANCHO, ALTO] });
-      doc.setProperties({ title: "", subject: "", author: "", keywords: "", creator: "" });
+  <section class="tarjeta">
+    <h2>Ajustes</h2>
+    <label>Tamaño de página
+      <select id="pagina"></select>
+    </label>
+    <label>Encabezado de la página de soluciones
+      <input type="text" id="encabezado" autocomplete="off">
+      <small>Déjalo vacío para no poner ninguno.</small>
+    </label>
+    <div id="avisoLetras" class="avisos"></div>
+  </section>
+</main>
 
-      // Recuadro a 1,5 cm del borde, para comprobar medidas al imprimir.
-      doc.setLineWidth(1);
-      doc.rect(1.5 * CM, 1.5 * CM, ANCHO - 3 * CM, ALTO - 3 * CM);
-      doc.setFontSize(20);
-      doc.text("Prueba de descarga", ANCHO / 2, ALTO / 2, { align: "center" });
-
-      descargar(doc, "prueba.pdf");
-      estado.textContent = "PDF generado. Mira las descargas de Chrome.";
-    } catch (e) {
-      estado.textContent = "Error: " + e.message;
-    }
-  });
-</script>
+<script src="lib/pdf-lib.min.js"></script>
+<script src="lib/fontkit.umd.min.js"></script>
+<script src="motor.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
