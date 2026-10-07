@@ -7,6 +7,16 @@ Es un proyecto separado del generador de escritorio en Python, con el mismo dise
 No lleva temas ni palabras predefinidos: el título y las palabras se escriben en cada uso,
 y todo se genera dentro del propio móvil (nada se envía a ningún servidor).
 
+## Dirección
+
+**https://chemaprompts.github.io/sopas-de-letras-web/**
+
+Está publicada con GitHub Pages desde la rama `main` del repositorio
+https://github.com/ChemaPrompts/sopas-de-letras-web. Cada vez que se suben cambios
+(`git push`), la web se actualiza sola en uno o dos minutos.
+
+No funciona abriendo `index.html` como archivo de la carpeta: hay que abrirla desde una dirección web.
+
 ## Cómo se usa
 
 1. Escribe el título y exactamente 12 palabras (con comas o una por línea).
