@@ -252,6 +252,7 @@ function iniciarAjustes() {
 // --- Arranque ------------------------------------------------------------------
 
 function iniciar() {
+  $("sinPrograma").hidden = true;
   const borrador = cargar("sopas-borrador", null);
   if (borrador) {
     $("titulo").value = borrador.titulo || "";
@@ -279,7 +280,13 @@ function iniciar() {
       $("btnGenerar").disabled = false;
       $("btnGenerar").textContent = "Generar sopa";
     })
-    .catch((e) => mostrarMensaje("Error al cargar la aplicación: " + e.message, true));
+    .catch((e) => {
+      $("btnGenerar").textContent = "No disponible";
+      const comoArchivo = location.protocol === "file:";
+      mostrarMensaje(comoArchivo
+        ? "La aplicación está abierta como archivo de la carpeta y así no puede funcionar. Ábrela desde su dirección web."
+        : "Error al cargar la aplicación: " + e.message, true);
+    });
 }
 
 iniciar();
