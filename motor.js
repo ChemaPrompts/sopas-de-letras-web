@@ -327,6 +327,35 @@ function claveOrden(texto) {
   return texto.replace(/Ñ/g, "N~");
 }
 
+function palabrasOrdenadas(sopa) {
+  return sopa.colocadas.map((p) => p.visible)
+    .sort((a, b) => (claveOrden(a) < claveOrden(b) ? -1 : claveOrden(a) > claveOrden(b) ? 1 : 0));
+}
+
+// Lista de palabras en COLUMNAS_LISTA columnas iguales dentro de un ancho dado;
+// se usa el primer tamaño de letra con el que caben todas las palabras.
+function medirLista(palabras, ancho, tamanos) {
+  const filas = Math.ceil(palabras.length / COLUMNAS_LISTA);
+  const anchoColumna = ancho / COLUMNAS_LISTA;
+  let tam, masLarga;
+  for (tam of tamanos) {
+    masLarga = Math.max(...palabras.map((p) => anchoTexto(p, "normal", tam)));
+    if (masLarga <= anchoColumna - 14) break;
+  }
+  return { palabras, filas, anchoColumna, tam, masLarga, alto: filas * tam * 1.55 };
+}
+
+// Dibuja la lista en orden alfabético de arriba abajo, columna a columna.
+function trazarLista(trazos, lista, x, yArriba) {
+  lista.palabras.forEach((palabra, i) => {
+    const col = Math.floor(i / lista.filas), fila = i % lista.filas;
+    trazos.push({ tipo: "texto", texto: palabra,
+                  x: x + col * lista.anchoColumna + (lista.anchoColumna - lista.masLarga) / 2,
+                  y: yArriba + lista.tam + fila * lista.tam * 1.55,
+                  tam: lista.tam, fuente: "normal", gris: 0, centrado: false });
+  });
+}
+
 // Página de la sopa: título numerado, cuadrícula y lista de palabras en 3 columnas.
 // La cuadrícula y la lista quedan a MARGEN_CUADRICULA de la caja de contenido por los 4 lados;
 // el título puede ocupar el margen superior.
@@ -338,23 +367,12 @@ function paginaSopa(sopa, titulo, area, anchoPagina) {
   const tit = prepararTitulo(titulo, "negrita", grande ? 22 : 18, 12, ancho);
   const huecoTitulo = 0.3 * PULGADA, huecoLista = 0.3 * PULGADA;
 
-  const palabras = sopa.colocadas.map((p) => p.visible)
-    .sort((a, b) => (claveOrden(a) < claveOrden(b) ? -1 : claveOrden(a) > claveOrden(b) ? 1 : 0));
-
   const ladoMax = ancho - 2 * MARGEN_CUADRICULA;
   const arriba = Math.max(MARGEN_CUADRICULA, tit.alto + huecoTitulo);
 
-  // Lista en COLUMNAS_LISTA columnas iguales dentro del ancho de la cuadrícula;
-  // se reduce la letra si alguna palabra no cabe.
-  const filas = Math.ceil(palabras.length / COLUMNAS_LISTA);
-  const anchoColumna = ladoMax / COLUMNAS_LISTA;
-  let tamLista, masLarga;
-  for (tamLista of (grande ? [12, 11, 10, 9, 8] : [11, 10, 9, 8])) {
-    masLarga = Math.max(...palabras.map((p) => anchoTexto(p, "normal", tamLista)));
-    if (masLarga <= anchoColumna - 14) break;
-  }
-  const altoLista = filas * tamLista * 1.55;
-  const abajo = huecoLista + altoLista + MARGEN_CUADRICULA;
+  // La lista ocupa el mismo ancho que la cuadrícula.
+  const lista = medirLista(palabrasOrdenadas(sopa), ladoMax, grande ? [12, 11, 10, 9, 8] : [11, 10, 9, 8]);
+  const abajo = huecoLista + lista.alto + MARGEN_CUADRICULA;
   const lado = Math.min(ladoMax, alto - arriba - abajo);
 
   const sobrante = alto - arriba - lado - abajo;
@@ -362,13 +380,7 @@ function paginaSopa(sopa, titulo, area, anchoPagina) {
   const yCuadricula = area.arriba + arriba + sobrante / 3;
   trazarCuadricula(trazos, sopa, area.x0 + (ancho - lado) / 2, yCuadricula, lado, false);
 
-  const xLista = area.x0 + (ancho - ladoMax) / 2;
-  const yLista = yCuadricula + lado + huecoLista;
-  palabras.forEach((palabra, i) => {
-    const col = Math.floor(i / filas), fila = i % filas;
-    trazos.push({ tipo: "texto", texto: palabra, x: xLista + col * anchoColumna + (anchoColumna - masLarga) / 2,
-                  y: yLista + tamLista + fila * tamLista * 1.55, tam: tamLista, fuente: "normal", gris: 0, centrado: false });
-  });
+  trazarLista(trazos, lista, area.x0 + (ancho - ladoMax) / 2, yCuadricula + lado + huecoLista);
 
   return { trazos, letra: tamanoLetra(lado, sopa.cuadricula.length) };
 }
@@ -388,8 +400,12 @@ function huecosSoluciones(area, altoEncabezado) {
   return { posiciones, ancho, alto };
 }
 
-function ladoSolucion(anchoHueco, altoHueco, altoTitulo) {
-  return Math.min(anchoHueco * ESCALA_SOLUCION, altoHueco - altoTitulo - 6);
+const TAMANOS_LISTA_SOLUCION = [8, 7, 6];
+const HUECO_LISTA_SOLUCION = 0.12 * PULGADA;
+
+// Si la cuadrícula al 50 % y su lista no caben de alto, la cuadrícula se reduce un poco.
+function ladoSolucion(anchoHueco, altoHueco, altoTitulo, altoLista) {
+  return Math.min(anchoHueco * ESCALA_SOLUCION, altoHueco - altoTitulo - 6 - HUECO_LISTA_SOLUCION - altoLista);
 }
 
 // grupo: lista de { titulo, sopa }. Devuelve los trazos y la letra más pequeña usada.
@@ -407,9 +423,17 @@ function paginaSoluciones(grupo, area, encabezado) {
   grupo.forEach(({ titulo, sopa }, i) => {
     const h = huecos.posiciones[i];
     const tit = prepararTitulo(titulo, "negrita", 10, 7, huecos.ancho);
-    const lado = ladoSolucion(huecos.ancho, huecos.alto, tit.alto);
+    // La lista ocupa el ancho de la cuadrícula, o algo más si las palabras no caben,
+    // sin pasar del ancho del hueco.
+    const palabras = palabrasOrdenadas(sopa);
+    let lista = medirLista(palabras, huecos.ancho, TAMANOS_LISTA_SOLUCION);
+    const lado = ladoSolucion(huecos.ancho, huecos.alto, tit.alto, lista.alto);
+    const anchoLista = Math.min(huecos.ancho, Math.max(lado, COLUMNAS_LISTA * (lista.masLarga + 14)));
+    lista = medirLista(palabras, anchoLista, [lista.tam]);
+    const yCuadricula = h.y + tit.alto + 6;
     trazarTitulo(trazos, tit, h.x + huecos.ancho / 2, h.y);
-    trazarCuadricula(trazos, sopa, h.x + (huecos.ancho - lado) / 2, h.y + tit.alto + 6, lado, true);
+    trazarCuadricula(trazos, sopa, h.x + (huecos.ancho - lado) / 2, yCuadricula, lado, true);
+    trazarLista(trazos, lista, h.x + (huecos.ancho - anchoLista) / 2, yCuadricula + lado + HUECO_LISTA_SOLUCION);
     letra = Math.min(letra, tamanoLetra(lado, sopa.cuadricula.length));
   });
   return { trazos, letra };
@@ -421,7 +445,8 @@ function estimarLetras(clavePagina) {
   const area = areaUtil(ancho, alto, 1, margenInterior(0));
   const letraSopa = tamanoLetra(area.x1 - area.x0 - 2 * MARGEN_CUADRICULA, TAMANO_CUADRICULA);
   const h = huecosSoluciones(area, 20 * 1.2);
-  return { sopa: letraSopa, solucion: tamanoLetra(ladoSolucion(h.ancho, h.alto, 10 * 1.2), TAMANO_CUADRICULA) };
+  const altoLista = Math.ceil(PALABRAS_POR_SOPA / COLUMNAS_LISTA) * TAMANOS_LISTA_SOLUCION[0] * 1.55;
+  return { sopa: letraSopa, solucion: tamanoLetra(ladoSolucion(h.ancho, h.alto, 10 * 1.2, altoLista), TAMANO_CUADRICULA) };
 }
 
 function textoAviso(que, letra, minima) {

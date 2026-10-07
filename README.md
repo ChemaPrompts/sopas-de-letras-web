@@ -27,6 +27,8 @@ Si borras los datos de navegación de Chrome, se pierde.
 - Las letras de relleno no forman por casualidad otra copia de ninguna palabra.
 - Página de la sopa: título numerado, cuadrícula y lista de palabras en 3 columnas de 4, en orden alfabético.
 - Soluciones al final, 2 por página, con la cuadrícula al 50 % y las palabras rodeadas con óvalos.
+  Debajo de cada solución va su lista de palabras (3 columnas de 4, letra de 8 pt o menos si no caben).
+  En 8x10 no cabe todo al 50 % y la cuadrícula de la solución queda algo más pequeña (alrededor del 45 %).
   Encabezado "Soluciones" en la primera página de soluciones (se puede cambiar o dejar vacío en Ajustes).
 - Al menos 1,5 cm entre la cuadrícula (y la lista) y la caja de contenido, en los 4 lados.
 - Tamaños: 6x9 (por defecto), 8,5x11, 8x10, 7x10 pulgadas y A4.
